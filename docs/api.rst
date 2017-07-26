@@ -33,6 +33,11 @@ Library for manipulating trees in Python made up of dicts and lists.
 
    Both dict and list support getitem notation, so the ``1`` works fine.
 
+   Some things to know about ``tree_get()``:
+
+   1. It doesn't alter the tree at all.
+   2. Once it hits an edge that's missing, it returns ``None`` or the default.
+
 
 .. py:func:: tree_set(tree, key, value)
 
@@ -52,7 +57,9 @@ Library for manipulating trees in Python made up of dicts and lists.
    >>> tree_set({}, 'a.b.c', value=5)
    {'a': {'b': {'c': 5}}}
 
-   This will not create new list indexes:
+   While ``tree_set`` does create new dicts and lists if they're missing, it
+   will not create new list indexes. Instead, it'll raise an ``IndexError``. For
+   example:
 
    >>> tree_set({}, 'a.1', value=5)
    IndexError('list index out of range')
@@ -61,23 +68,19 @@ Library for manipulating trees in Python made up of dicts and lists.
    exist in a list.
 
 
-   .. Note::
-
-      Other ideas
-
-      Add a ``create_indexes=True`` argument that'll let it fill in missing
-      indexes with ``None``:
-
-      >>> tree_set({}, 'a.1.b', value=5, create_indexes=True)
-      {'a': [None, {'b': 5}]}
-
-
 .. py:func:: tree_flatten(tree)
 
-   FIXME
+   Flattens a tree into a dict with keys of paths.
+
+   >>> tree_flatten({'a': 1})
+   {'a': 1}
+   >>> tree_flatten({'a': {'b': 1, 'c': 2}})
+   {'a.b': 1, 'a.c': 2}
+   >>> tree_flatten({'a': [{'b': 1}, {'c': 2}]})
+   {'a.0.b': 1, 'a.1.c': 2}
 
 
-.. py:func:: tree_validate(tree, fun)
+.. py:func:: tree_validate(tree, schema)
 
    FIXME
 
