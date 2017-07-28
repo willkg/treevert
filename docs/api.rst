@@ -5,13 +5,66 @@ Treelib API
 Library for manipulating trees in Python made up of dicts and lists.
 
 
-.. py:func:: tree_get(tree, key, default=None)
+Paths
+=====
 
-   Given a tree consisting of mappings (like dict) and indexable sequences (like
-   list), returns the value specified by the key.
+Paths are period-delimited set of edges to take. Edges can be:
 
-   The key is a period-delimited sequence of edges to traverse. If one of the
-   ediges doesn't exist, then the default is returned immediately.
+1. a key (for a dict)
+2. an index (for a list)
+
+Example paths::
+
+  a
+  a.[1].foo_bar.Bar
+  a.b.[-1].Bar
+
+
+Key
+---
+
+Keys are identifiers that:
+
+1. are made of ascii alphanumeric characters, hyphens, and underscores
+2. are at least one character long
+
+For example, these are all valid keys::
+
+  a
+  foo
+  FooBar
+  Foo-Bar
+  foo_bar
+
+
+Index
+-----
+
+Indexes are 0-based list indexes. They are:
+
+1. integers
+2. wrapped in ``[`` and ``]``
+3. can be negative
+
+For example, these are all valid indexes::
+
+  [0]
+  [1]
+  [-50]
+
+
+API
+===
+
+.. py:func:: tree_get(tree, path, default=None)
+
+   Given a tree consisting of dicts and lists, returns the value specified by
+   the path.
+
+   Some things to know about ``tree_get()``:
+
+   1. It doesn't alter the tree.
+   2. Once it hits an edge that's missing, it returns the default.
 
    Examples:
 
@@ -23,49 +76,97 @@ Library for manipulating trees in Python made up of dicts and lists.
    2
    >>> tree_get({'a': {'b': 2}}, 'a.b.c', default=55)
    55
-
-   This supports sequences, too:
-
-   >>> tree_get({'a': [1, 2, 3]}, 'a.1')
-   2
    >>> tree_get({'a': {'1': 2}}, 'a.1')
    2
-
-   Both dict and list support getitem notation, so the ``1`` works fine.
-
-   Some things to know about ``tree_get()``:
-
-   1. It doesn't alter the tree at all.
-   2. Once it hits an edge that's missing, it returns ``None`` or the default.
+   >>> tree_get({'a': [1, 2, 3]}, 'a.[1]')
+   2
+   >>> tree_get({'a': [{}, {'b': 'foo'}]}, 'a.[1].b')
+   'foo'
 
 
-.. py:func:: tree_set(tree, key, value)
+.. py:func:: tree_set(tree, path, value, mutate=True, create_missing=False)
 
-   Given a tree consisting of mappings (like dict) and indexable sequences that
-   support getitem notation, sets the key to the value.
+   Given a tree consisting of dicts and lists, sets the item specified by path
+   to the specified value.
 
-   The key is a period-delimited sequence of edges to traverse. If one of the
-   ediges doesn't exist, then the edge is created using these rules:
+   If one of the edges doesn't exist, then this raises either a ``KeyError``
+   for dicts or a ``IndexError`` for lists.
 
-   1. if the next edge is an integer, then it creates a list
-   2. if the next edge is not an integer, then it creates a dict
+   :arg boolean mutate: If ``mutate`` is ``True`` (the default), then this
+       changes the tree in place and returns the mutated tree.
 
-   This returns the tree which is mutated in place.
+       If ``mutate`` is ``False``, then this does a deepcopy of the tree,
+       changes the copy, and returns the copy. This is expensive.
 
-   >>> tree_set({}, 'a', value=5)
+   :arg boolean create_missing: If ``create_missing`` is ``False`` (the default),
+      then this will raise a ``KeyError`` for failed dict keys and
+      ``IndexError`` for failed list indexes.
+
+      If ``create_missing`` is ``True``, and this isn't
+      the last item in the path, then this will create the intermediary
+      dict/list.
+
+      If the next edge is a key, it'll create a dict. If the next edge is an
+      index, then it'll create a list filling in ``None`` for the required
+      indices.
+
+      Here are some examples.
+
+      This sets ``a`` to 5. This isn't affected by ``create_missing``.
+
+      >>> tree_set({}, 'a', value=5, create_missing=True)
+      {'a': 5}
+      >>> tree_set({}, 'a', value=5, create_missing=False)
+      {'a': 5}
+
+      This tries to traverse ``a``, but it doesn't exist and it's not the last
+      edge in the path. The next edge is ``b``, which is a key, so it first sets
+      ``a`` to an empty dict, then proceeds.
+
+      >>> tree_set({}, 'a.b', value=5, create_missing=True)
+      {'a': {'b': 5}}
+
+      This tries to traverse ``a``, but it doesn't exist and it's not the last
+      edge in the path. The next edge is ``[2]``, which is an index, so it first
+      sets ``a`` to a list of 3 ``None`` values, then proceeds.
+
+      >>> tree_set({}, 'a.[2]', value=5, create_missing=True)
+      {'a': [None, None, 5]}
+
+      This is similar, but with a negative index.
+
+      >>> tree_set({}, 'a.[-1]', value=5, create_missing=True)
+      {'a': [5]}
+
+      This creates missing indices in an existing list.
+
+      >>> tree_set({'a': []}, 'a.[2]', value=5, create_missing=True)
+      {'a': [None, None, 5]}
+
+
+   Examples:
+
+   These don't mutate the tree:
+
+   >>> tree = {'a': {'b': {'c': 1}}}
+   >>> tree_set(tree, 'a', value=5, mutate=False)
    {'a': 5}
+   >>> tree_set(tree, 'a.b.c', value=[], mutate=False)
+   {'a': {'b': {'c': []}}}
+
+   These raise errors if an edge is missing:
+
    >>> tree_set({}, 'a.b.c', value=5)
+   KeyError ...
+   >>> tree_set({}, 'a.[1].b', value=5)
+   IndexError ...
+
+   These create missing edges and indexes:
+
+   >>> tree_set({}, 'a.b.c', value=5, create_missing=True)
    {'a': {'b': {'c': 5}}}
-
-   While ``tree_set`` does create new dicts and lists if they're missing, it
-   will not create new list indexes. Instead, it'll raise an ``IndexError``. For
-   example:
-
-   >>> tree_set({}, 'a.1', value=5)
-   IndexError('list index out of range')
-
-   This is the same error you'd get if you tried to access an index that doesn't
-   exist in a list.
+   >>> tree_set({}, 'a.[1].b', value=5, create_missing=True)
+   {'a': [None, {'b': 5}]}
 
 
 .. py:func:: tree_flatten(tree)
@@ -77,7 +178,17 @@ Library for manipulating trees in Python made up of dicts and lists.
    >>> tree_flatten({'a': {'b': 1, 'c': 2}})
    {'a.b': 1, 'a.c': 2}
    >>> tree_flatten({'a': [{'b': 1}, {'c': 2}]})
-   {'a.0.b': 1, 'a.1.c': 2}
+   {'a.[0].b': 1, 'a.[1].c': 2}
+
+   .. Note::
+
+      At this point, a flattened tree can't be used using ``tree_get`` and
+      ``tree_set``.
+
+
+.. py:func:: tree_setdefault(tree, default_tree)
+
+   FIXME
 
 
 .. py:func:: tree_validate(tree, schema)
