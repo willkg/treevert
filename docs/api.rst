@@ -5,6 +5,47 @@ Treelib API
 Library for manipulating trees in Python made up of dicts and lists.
 
 
+Goals
+=====
+
+The primary goal of this library is to make it less unwieldy to manipulate trees
+made up of Python dicts and lists.
+
+For example, say we want to get a value deep in the tree. we could do this::
+
+  value = tree['a']['b']['c']
+
+
+That'll throw a ``KeyError`` if any of those bits are missing. So you could
+handle that::
+
+  try:
+      value = tree['a']['b']['c']
+  except KeyError:
+      value = None
+
+
+Alternatively, you could do this::
+
+  value = tree.get('a', {}).get('b', {}).get('c': None)
+
+
+These work, but both are unwieldy especially if you're doing this a lot.
+
+Similarly, setting things deep is also unenthusing::
+
+  tree['a']['b']['c'] = 5
+
+
+The safer form is this::
+
+  tree.setdefault('a', {}).setdefault('b', {})['c'] = 5
+
+
+This library aims to make sane use cases for tree manipulation easier to read
+and think about.
+
+
 Paths
 =====
 
