@@ -61,6 +61,10 @@ Example paths::
   a.b.[-1].Bar
 
 
+One nice thing about paths is that they're just strings, so you can compose them
+using string operations.
+
+
 Key
 ---
 
@@ -240,3 +244,43 @@ API
 .. py:func:: tree_traverse(tree, fun)
 
    FIXME
+
+
+Research and Inspirations
+=========================
+
+Python ``defaultdict``
+----------------------
+
+Python has a defaultdict
+
+https://docs.python.org/3/library/collections.html#defaultdict-objects
+
+This doens't handle lists and dicts well, though.
+
+We'd have to either create the original data structure as a defaultdict, or
+convert it to one.
+
+If you try to get something deep from a defaultdict, it mutates the
+structure.
+
+It doesn't easily support composable paths.
+
+
+jq processor
+------------
+
+jq has interesting filter syntax.
+
+https://stedolan.github.io/jq/manual/#Basicfilters
+
+
+Creating a new subclass of Python ``dict``
+------------------------------------------
+
+We could do that and add ``get_path`` and ``set_path``, but I wonder if we can
+get the utility we want without having to box/unbox data.
+
+If we're just working with dicts and lists and standard Python things, then
+``json.dumps`` and other things just work without us having to do anything about
+them.
