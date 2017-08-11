@@ -49,7 +49,7 @@ and think about.
 Paths
 =====
 
-Paths are period-delimited set of edges to take. Edges can be:
+A path is a string specifying a period-delimited list of edges. Edges can be:
 
 1. a key (for a dict)
 2. an index (for a list)
@@ -61,17 +61,18 @@ Example paths::
   a.b.[-1].Bar
 
 
-One nice thing about paths is that they're just strings, so you can compose them
-using string operations.
+Paths can be composed using string operations since they're just strings.
+
+FIXME(willkg): Add diagram showing a tree with edges specified by a path.
 
 
 Key
 ---
 
-Keys are identifiers that:
+Keys are identifiers that are:
 
-1. are made of ascii alphanumeric characters, hyphens, and underscores
-2. are at least one character long
+1. composed entirely of ascii alphanumeric characters, hyphens, and underscores
+2. at least one character long
 
 For example, these are all valid keys::
 
@@ -85,7 +86,7 @@ For example, these are all valid keys::
 Index
 -----
 
-Indexes are 0-based list indexes. They are:
+Indexes indicate a 0-based list index. They are:
 
 1. integers
 2. wrapped in ``[`` and ``]``
